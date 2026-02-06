@@ -33,7 +33,7 @@ parameters = {
 # =====================
 # NASLOV
 # =====================
-st.title("Krvni parametri – % bias i korekcija vrednosti")
+st.title("Krvni parametri – % bias i korekcija vrednosti sa 3D grafom")
 
 # =====================
 # UNOS PODATAKA
