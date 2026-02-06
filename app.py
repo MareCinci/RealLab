@@ -2,7 +2,6 @@ import streamlit as st
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 # =====================
 # KRVI PARAMETRI
@@ -33,7 +32,7 @@ parameters = {
 # =====================
 # NASLOV
 # =====================
-st.title("Krvni parametri – 3D prikaz izmerene i korigovane vrednosti")
+st.title("Krvni parametri – % bias i korekcija realne vrednosti")
 
 # =====================
 # UNOS PODATAKA
@@ -57,41 +56,63 @@ ci_high = percent_bias + 1.96 * SE
 # =====================
 # KOREKCIJA REALNE VREDNOSTI
 # =====================
-real_value = original_value / (1 + percent_bias / 100)
-real_ci_low = original_value / (1 + ci_high / 100)
-real_ci_high = original_value / (1 + ci_low / 100)
+if percent_bias != -100:
+    real_value = original_value / (1 + percent_bias / 100)
+    real_ci_low = original_value / (1 + ci_high / 100)
+    real_ci_high = original_value / (1 + ci_low / 100)
+else:
+    real_value = float('nan')
+    real_ci_low = float('nan')
+    real_ci_high = float('nan')
 
 # =====================
 # PRIKAZ REZULTATA
 # =====================
 st.markdown("### Rezultati")
 st.write(f"**% bias:** {percent_bias:.2f}")
+st.write(f"**95% CI % bias:** [{ci_low:.2f}, {ci_high:.2f}]")
 st.write(f"**Korigovana realna vrednost {param}:** {real_value:.2f}")
 st.write(f"**95% CI realne vrednosti:** [{real_ci_low:.2f}, {real_ci_high:.2f}]")
 
 # =====================
-# GRAF 3: 3D – Hb, % bias, vrednosti parametra
+# GRAF 1: % bias vs Hb (prvi graf ostaje)
 # =====================
-fig3 = plt.figure(figsize=(8,6))
-ax3 = fig3.add_subplot(111, projection='3d')
+x_range = np.linspace(0, 10, 200)
+bias_range = a * x_range + b
+ci_lower_range = bias_range - 1.96 * abs(bias_range) * math.sqrt(1 - R2)
+ci_upper_range = bias_range + 1.96 * abs(bias_range) * math.sqrt(1 - R2)
 
-# tačke: izmerena i korigovana vrednost
-# X = Hb
-# Y = % bias
-# Z = vrednost parametra
+fig1, ax1 = plt.subplots(figsize=(8,5))
+ax1.plot(x_range, bias_range, label="% bias", color="blue")
+ax1.fill_between(x_range, ci_lower_range, ci_upper_range, alpha=0.3, label="95% CI")
+ax1.scatter(x, percent_bias, color="red", s=50, label="Unos", zorder=5)
+ax1.set_xlabel("Hb koncentracija (g/L)")
+ax1.set_ylabel("% bias")
+ax1.set_xlim(0, 10)
+ax1.set_title(f"{param} – % bias vs Hb")
+ax1.legend()
+ax1.grid(True)
+st.pyplot(fig1)
 
-# izmerena vrednost
-ax3.scatter(x, percent_bias, original_value, color='red', s=60, label='Izmerena vrednost')
-# korigovana vrednost
-ax3.scatter(x, percent_bias, real_value, color='blue', s=60, label='Korigovana vrednost')
-# linija koja spaja dve tačke
-ax3.plot([x, x], [percent_bias, percent_bias], [original_value, real_value], color='black', linestyle='--')
+# =====================
+# GRAF 2: Korigovana realna vrednost vs Originalna izmerena vrednost sa 95% CI
+# =====================
+original_range = np.linspace(0.5*original_value, 1.5*original_value, 100)
+bias_high = percent_bias + 1.96 * SE
+bias_low = percent_bias - 1.96 * SE
 
-ax3.set_xlabel("Hb koncentracija (g/L)")
-ax3.set_ylabel("% bias")
-ax3.set_zlabel(f"{param} (vrednost)")
-ax3.set_title(f"{param} – 3D prikaz izmerene i korigovane vrednosti")
-ax3.legend()
-ax3.grid(True)
+real_range = original_range / (1 + percent_bias / 100)
+real_ci_lower = original_range / (1 + bias_high / 100)
+real_ci_upper = original_range / (1 + bias_low / 100)
 
-st.pyplot(fig3)
+fig2, ax2 = plt.subplots(figsize=(6,6))
+ax2.plot(original_range, real_range, label="Korigovana realna vrednost", color="green")
+ax2.fill_between(original_range, real_ci_lower, real_ci_upper, color="green", alpha=0.3, label="95% CI realne vrednosti")
+ax2.scatter(original_value, real_value, color="red", s=50, label="Unos", zorder=5)
+ax2.set_xlabel("Originalna izmerena vrednost")
+ax2.set_ylabel("Korigovana realna vrednost")
+ax2.set_title(f"{param} – Realna vs Originalna vrednost")
+ax2.legend()
+ax2.grid(True)
+
+st.pyplot(fig2)
