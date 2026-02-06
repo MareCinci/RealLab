@@ -42,31 +42,37 @@ x = st.number_input("Hb koncentracija (g/L)", value=1.0, step=0.1)
 original_value = st.number_input(f"Originalna izmerena vrednost {param}", value=0.0, step=0.01)
 
 # =====================
-# IZRAČUNAVANJE
+# IZRAČUNAVANJE % BIAS
 # =====================
 a = parameters[param]["a"]
 b = parameters[param]["b"]
 R2 = parameters[param]["R2"]
 
-# % bias prema formuli
 percent_bias = a * x + b
 SE = abs(percent_bias) * math.sqrt(1 - R2)
 ci_low = percent_bias - 1.96 * SE
 ci_high = percent_bias + 1.96 * SE
 
-# Korekcija originalne vrednosti
+# =====================
+# KOREKCIJA REALNE VREDNOSTI
+# =====================
 if percent_bias != -100:
     real_value = original_value / (1 + percent_bias / 100)
+    real_ci_low = original_value / (1 + ci_high / 100)  # inverzno
+    real_ci_high = original_value / (1 + ci_low / 100)
 else:
     real_value = float('nan')
+    real_ci_low = float('nan')
+    real_ci_high = float('nan')
 
 # =====================
 # PRIKAZ REZULTATA
 # =====================
 st.markdown("### Rezultati")
 st.write(f"**% bias:** {percent_bias:.2f}")
-st.write(f"**95% CI:** [{ci_low:.2f}, {ci_high:.2f}]")
+st.write(f"**95% CI % bias:** [{ci_low:.2f}, {ci_high:.2f}]")
 st.write(f"**Korigovana realna vrednost {param}:** {real_value:.2f}")
+st.write(f"**95% CI realne vrednosti:** [{real_ci_low:.2f}, {real_ci_high:.2f}]")
 
 # =====================
 # GRAFIK
@@ -78,7 +84,7 @@ ci_h = y_range + 1.96 * SE
 
 fig, ax = plt.subplots(figsize=(8,5))
 ax.plot(x_range, y_range, label="Regresija")
-ax.fill_between(x_range, ci_l, ci_h, alpha=0.3, label="95% CI")
+ax.fill_between(x_range, ci_l, ci_h, alpha=0.3, label="95% CI % bias")
 ax.scatter(x, percent_bias, color="red", label="Unos", zorder=5)
 ax.set_xlabel("Hb koncentracija (g/L)")
 ax.set_ylabel("% bias")
