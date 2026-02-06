@@ -32,7 +32,7 @@ parameters = {
 # =====================
 # NASLOV
 # =====================
-st.title("Krvni parametri – korekcija % bias i 95% CI")
+st.title("Krvni parametri – % bias i korekcija realne vrednosti")
 
 # =====================
 # UNOS PODATAKA
@@ -58,7 +58,7 @@ ci_high = percent_bias + 1.96 * SE
 # =====================
 if percent_bias != -100:
     real_value = original_value / (1 + percent_bias / 100)
-    real_ci_low = original_value / (1 + ci_high / 100)  # inverzno
+    real_ci_low = original_value / (1 + ci_high / 100)
     real_ci_high = original_value / (1 + ci_low / 100)
 else:
     real_value = float('nan')
@@ -75,22 +75,37 @@ st.write(f"**Korigovana realna vrednost {param}:** {real_value:.2f}")
 st.write(f"**95% CI realne vrednosti:** [{real_ci_low:.2f}, {real_ci_high:.2f}]")
 
 # =====================
-# GRAFIK
+# GRAF 1: % bias vs Hb (prvi graf)
 # =====================
-x_range = np.linspace(0, 10, 200)  # Hb od 0 do 10 g/L
-y_range = a * x_range + b
-ci_l = y_range - 1.96 * SE
-ci_h = y_range + 1.96 * SE
+x_range = np.linspace(0, 10, 200)
+bias_range = a * x_range + b
+ci_lower_range = bias_range - 1.96 * abs(bias_range) * math.sqrt(1 - R2)
+ci_upper_range = bias_range + 1.96 * abs(bias_range) * math.sqrt(1 - R2)
 
-fig, ax = plt.subplots(figsize=(8,5))
-ax.plot(x_range, y_range, label="Regresija")
-ax.fill_between(x_range, ci_l, ci_h, alpha=0.3, label="95% CI % bias")
-ax.scatter(x, percent_bias, color="red", label="Unos", zorder=5)
-ax.set_xlabel("Hb koncentracija (g/L)")
-ax.set_ylabel("% bias")
-ax.set_xlim(0, 10)
-ax.set_title(f"{param} – % bias vs Hb")
-ax.legend()
-ax.grid(True)
+fig1, ax1 = plt.subplots(figsize=(8,5))
+ax1.plot(x_range, bias_range, label="% bias", color="blue")
+ax1.fill_between(x_range, ci_lower_range, ci_upper_range, alpha=0.3, label="95% CI")
+ax1.scatter(x, percent_bias, color="red", s=50, label="Unos", zorder=5)
+ax1.set_xlabel("Hb koncentracija (g/L)")
+ax1.set_ylabel("% bias")
+ax1.set_xlim(0, 10)
+ax1.set_title(f"{param} – % bias vs Hb")
+ax1.legend()
+ax1.grid(True)
+st.pyplot(fig1)
 
-st.pyplot(fig)
+# =====================
+# GRAF 2: Korigovana realna vrednost vs Originalna izmerena vrednost
+# =====================
+original_range = np.linspace(0.5*original_value, 1.5*original_value, 100)
+real_range = original_range / (1 + percent_bias / 100)  # ista Hb, ista formula
+
+fig2, ax2 = plt.subplots(figsize=(6,6))
+ax2.plot(original_range, real_range, label="Y = real_value(X)", color="green")
+ax2.scatter(original_value, real_value, color="red", s=50, label="Unos", zorder=5)
+ax2.set_xlabel("Originalna izmerena vrednost")
+ax2.set_ylabel("Korigovana realna vrednost")
+ax2.set_title(f"{param} – Realna vs Originalna vrednost")
+ax2.legend()
+ax2.grid(True)
+st.pyplot(fig2)
