@@ -2,7 +2,6 @@ import streamlit as st
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 # =====================
 # KRVI PARAMETRI
@@ -33,7 +32,7 @@ parameters = {
 # =====================
 # NASLOV
 # =====================
-st.title("Krvni parametri – % bias i korekcija vrednosti sa 3D grafom")
+st.title("Krvni parametri – % bias i korekcija vrednosti")
 
 # =====================
 # UNOS PODATAKA
@@ -108,23 +107,3 @@ ax2.set_title(f"{param} – Korigovana vs Izmerena vrednost")
 ax2.legend()
 ax2.grid(True)
 st.pyplot(fig2)
-
-# =====================
-# GRAF 3: 3D graf (Hb, % bias, vrednosti parametra)
-# =====================
-fig3 = plt.figure(figsize=(8,6))
-ax3 = fig3.add_subplot(111, projection='3d')
-
-# tačke: izmerena i korigovana vrednost
-ax3.scatter(x, percent_bias, measured_value, color='red', s=60, label='Izmerena vrednost')
-ax3.scatter(x, percent_bias, corrected_value, color='blue', s=60, label='Korigovana vrednost')
-ax3.plot([x, x], [percent_bias, percent_bias], [measured_value, corrected_value], color='black', linestyle='--')
-
-ax3.set_xlabel("Hb koncentracija (g/L)")
-ax3.set_ylabel("% bias")
-ax3.set_zlabel(f"{param} (vrednost)")
-ax3.set_title(f"{param} – 3D prikaz izmerene i korigovane vrednosti")
-ax3.legend()
-ax3.grid(True)
-
-st.pyplot(fig3)
