@@ -75,7 +75,7 @@ st.write(f"**Korigovana realna vrednost {param}:** {real_value:.2f}")
 st.write(f"**95% CI realne vrednosti:** [{real_ci_low:.2f}, {real_ci_high:.2f}]")
 
 # =====================
-# GRAF 1: % bias vs Hb (prvi graf)
+# GRAF 1: % bias vs Hb (prvi graf ostaje)
 # =====================
 x_range = np.linspace(0, 10, 200)
 bias_range = a * x_range + b
@@ -95,17 +95,24 @@ ax1.grid(True)
 st.pyplot(fig1)
 
 # =====================
-# GRAF 2: Korigovana realna vrednost vs Originalna izmerena vrednost
+# GRAF 2: Korigovana realna vrednost vs Originalna izmerena vrednost sa 95% CI
 # =====================
 original_range = np.linspace(0.5*original_value, 1.5*original_value, 100)
-real_range = original_range / (1 + percent_bias / 100)  # ista Hb, ista formula
+bias_high = percent_bias + 1.96 * SE
+bias_low = percent_bias - 1.96 * SE
+
+real_range = original_range / (1 + percent_bias / 100)
+real_ci_lower = original_range / (1 + bias_high / 100)
+real_ci_upper = original_range / (1 + bias_low / 100)
 
 fig2, ax2 = plt.subplots(figsize=(6,6))
-ax2.plot(original_range, real_range, label="Y = real_value(X)", color="green")
+ax2.plot(original_range, real_range, label="Korigovana realna vrednost", color="green")
+ax2.fill_between(original_range, real_ci_lower, real_ci_upper, color="green", alpha=0.3, label="95% CI realne vrednosti")
 ax2.scatter(original_value, real_value, color="red", s=50, label="Unos", zorder=5)
 ax2.set_xlabel("Originalna izmerena vrednost")
 ax2.set_ylabel("Korigovana realna vrednost")
 ax2.set_title(f"{param} – Realna vs Originalna vrednost")
 ax2.legend()
 ax2.grid(True)
+
 st.pyplot(fig2)
