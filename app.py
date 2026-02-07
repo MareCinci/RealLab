@@ -67,11 +67,11 @@ a = parameters[param]["a"]
 b = parameters[param]["b"]
 R2 = parameters[param]["R2"]
 
-# Ako Hb nije unet (x <=0), koristimo Hb=1 kao osnovu
-base_Hb = x if x > 0 else 1.0
-
-# Linearni bias
-percent_bias = a * base_Hb + b
+# Osnovni bias: 0 ako Hb nije unet ili Hb=0
+if x <= 0:
+    percent_bias = 0.0
+else:
+    percent_bias = a * x + b
 
 # Preanalitički faktor
 if room_temp and delay_over_8h:
@@ -83,12 +83,14 @@ else:
 
 # Primena pravila
 if extra_bias > 0:
-    if x <= 0:  # Hb nije unet
-        percent_bias *= (1 + extra_bias)  # puni efekat
-    elif x < 1:  # Hb < 1
-        percent_bias *= (1 + extra_bias)  # puni efekat
-    else:  # Hb >= 1
-        percent_bias *= (1 + extra_bias * x)  # proporcionalno Hb
+    if x <= 0:
+        # Hb nije unet → koristi osnovu bias pri Hb=1
+        base_bias = a * 1.0 + b
+        percent_bias = base_bias * (1 + extra_bias)
+    elif x < 1:
+        percent_bias *= (1 + extra_bias)
+    else:
+        percent_bias *= (1 + extra_bias * x)
 
 # 95% CI
 SE = abs(percent_bias) * math.sqrt(1 - R2)
@@ -120,10 +122,7 @@ st.write(
 x_range = np.linspace(0, 10, 200)
 bias_range = a * x_range + b
 
-# Primena preanalitičkog faktora na numpy niz
 extra_bias_range = np.zeros_like(x_range)
-
-# boolean maska za preanalitički faktor
 preanalytical_mask = room_temp | delay_over_8h
 
 # Hb < 1 ili prazno → puni efekat
@@ -133,6 +132,9 @@ extra_bias_range[mask_lt1] = extra_bias
 # Hb >= 1 → proporcionalno
 mask_ge1 = (x_range >= 1) & preanalytical_mask
 extra_bias_range[mask_ge1] = extra_bias * x_range[mask_ge1]
+
+# Ako x=0, grafikon koristi bias pri Hb=1 za DA slučajeve
+bias_range[x_range == 0] = a * 1.0 + b
 
 bias_range *= (1 + extra_bias_range)
 
