@@ -52,13 +52,13 @@ transport_answer = st.radio(
 )
 
 time_answer = st.radio(
-    "Da li je od uzorkovanja do obrade u laboratoriji prošlo više od 4 sata?",
+    "Da li je od uzorkovanja do obrade u laboratoriji prošlo više od 8 sati?",
     ["NE", "DA"],
     index=0
 )
 
 room_temp = transport_answer == "DA"
-delay_over_4h = time_answer == "DA"
+delay_over_8h = time_answer == "DA"
 
 # =====================
 # IZRAČUNAVANJE % BIAS
@@ -71,10 +71,10 @@ R2 = parameters[param]["R2"]
 percent_bias = a * x + b
 
 # Interna korekcija zbog preanalitičkih faktora
-if room_temp and delay_over_4h:
+if room_temp and delay_over_8h:
+    percent_bias *= 1.60   # +60%
+elif room_temp or delay_over_8h:
     percent_bias *= 1.40   # +40%
-elif room_temp or delay_over_4h:
-    percent_bias *= 1.20   # +20%
 
 # 95% CI
 SE = abs(percent_bias) * math.sqrt(1 - R2)
@@ -106,10 +106,10 @@ st.write(
 x_range = np.linspace(0, 10, 200)
 bias_range = a * x_range + b
 
-if room_temp and delay_over_4h:
+if room_temp and delay_over_8h:
+    bias_range *= 1.60
+elif room_temp or delay_over_8h:
     bias_range *= 1.40
-elif room_temp or delay_over_4h:
-    bias_range *= 1.20
 
 ci_lower_range = bias_range - 1.96 * abs(bias_range) * math.sqrt(1 - R2)
 ci_upper_range = bias_range + 1.96 * abs(bias_range) * math.sqrt(1 - R2)
