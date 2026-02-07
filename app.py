@@ -70,16 +70,20 @@ R2 = parameters[param]["R2"]
 # Linearni bias
 percent_bias = a * x + b
 
-# Interna korekcija zbog preanalitičkih faktora sa skaliranjem po Hb
-preanalytical_factor = 1.0
+# Interna korekcija zbog preanalitičkih faktora
 if room_temp and delay_over_8h:
-    preanalytical_factor = 1.60   # +60% za oba faktora
+    extra_bias = 0.60  # +60% za oba faktora
 elif room_temp or delay_over_8h:
-    preanalytical_factor = 1.40   # +40% za jedan faktor
+    extra_bias = 0.40  # +40% za jedan faktor
+else:
+    extra_bias = 0.0
 
-# Skaliranje po Hb, za Hb između 0 i 0.99
-hb_scaling = min(x, 0.99)
-percent_bias *= (1 + (preanalytical_factor - 1) * hb_scaling)
+# Ako je Hb < 1, dodatni bias se računa kao da je Hb = 1
+if extra_bias > 0:
+    if x < 1:
+        percent_bias *= (1 + extra_bias)  # puni efekat
+    else:
+        percent_bias *= (1 + extra_bias * x)  # proporcionalno Hb >=1
 
 # 95% CI
 SE = abs(percent_bias) * math.sqrt(1 - R2)
@@ -111,9 +115,11 @@ st.write(
 x_range = np.linspace(0, 10, 200)
 bias_range = a * x_range + b
 
-# Primena preanalitičkog faktora po Hb
-hb_scaling_range = np.minimum(x_range, 0.99)
-bias_range *= (1 + (preanalytical_factor - 1) * hb_scaling_range)
+# Primena preanalitičkog faktora po pravilima Hb < 1
+extra_bias_range = np.zeros_like(x_range)
+extra_bias_range[(room_temp or delay_over_8h) & (x_range < 1)] = extra_bias
+extra_bias_range[(room_temp or delay_over_8h) & (x_range >= 1)] = extra_bias * x_range[(x_range >= 1)]
+bias_range *= (1 + extra_bias_range)
 
 ci_lower_range = bias_range - 1.96 * abs(bias_range) * np.sqrt(1 - R2)
 ci_upper_range = bias_range + 1.96 * abs(bias_range) * np.sqrt(1 - R2)
@@ -156,5 +162,4 @@ ax2.set_xlabel("Izmerena vrednost")
 ax2.set_ylabel("Korigovana vrednost")
 ax2.set_title(f"{param} – Korigovana vs Izmerena vrednost")
 ax2.legend()
-ax2.grid(True)
-st.pyplot(fig2)
+ax2.grid
