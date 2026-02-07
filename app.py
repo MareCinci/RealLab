@@ -70,11 +70,16 @@ R2 = parameters[param]["R2"]
 # Linearni bias
 percent_bias = a * x + b
 
-# Interna korekcija zbog preanalitičkih faktora
+# Interna korekcija zbog preanalitičkih faktora sa skaliranjem po Hb
+preanalytical_factor = 1.0
 if room_temp and delay_over_8h:
-    percent_bias *= 1.60   # +100%
+    preanalytical_factor = 1.60   # +60% za oba faktora
 elif room_temp or delay_over_8h:
-    percent_bias *= 1.40   # +60%
+    preanalytical_factor = 1.40   # +40% za jedan faktor
+
+# Skaliranje po Hb, za Hb između 0 i 0.99
+hb_scaling = min(x, 0.99)
+percent_bias *= (1 + (preanalytical_factor - 1) * hb_scaling)
 
 # 95% CI
 SE = abs(percent_bias) * math.sqrt(1 - R2)
@@ -106,13 +111,12 @@ st.write(
 x_range = np.linspace(0, 10, 200)
 bias_range = a * x_range + b
 
-if room_temp and delay_over_8h:
-    bias_range *= 1.60
-elif room_temp or delay_over_8h:
-    bias_range *= 1.40
+# Primena preanalitičkog faktora po Hb
+hb_scaling_range = np.minimum(x_range, 0.99)
+bias_range *= (1 + (preanalytical_factor - 1) * hb_scaling_range)
 
-ci_lower_range = bias_range - 1.96 * abs(bias_range) * math.sqrt(1 - R2)
-ci_upper_range = bias_range + 1.96 * abs(bias_range) * math.sqrt(1 - R2)
+ci_lower_range = bias_range - 1.96 * abs(bias_range) * np.sqrt(1 - R2)
+ci_upper_range = bias_range + 1.96 * abs(bias_range) * np.sqrt(1 - R2)
 
 fig1, ax1 = plt.subplots(figsize=(8, 5))
 ax1.plot(x_range, bias_range, label="% bias")
