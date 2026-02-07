@@ -39,16 +39,26 @@ st.title("Krvni parametri – % bias i korekcija vrednosti")
 # =====================
 param = st.selectbox("Izaberi krvni parametar", list(parameters.keys()))
 x = st.number_input("Hb koncentracija (g/L)", value=1.0, step=0.1)
-measured_value = st.number_input(f"Izmerena vrednost {param}", value=0.0, step=0.01)
+measured_value = st.number_input(
+    f"Izmerena vrednost {param}", value=0.0, step=0.01
+)
 
 st.markdown("### Preanalitički uslovi")
 
-room_temp = st.checkbox(
-    "Transport i čuvanje na sobnoj temperaturi (nije u frižideru)"
+transport_answer = st.radio(
+    "Da li je transport i čuvanje uzorka bilo na sobnoj temperaturi?",
+    ["NE", "DA"],
+    index=0
 )
-delay_over_4h = st.checkbox(
-    "Više od 4 sata od uzorkovanja do obrade u laboratoriji"
+
+time_answer = st.radio(
+    "Da li je od uzorkovanja do obrade u laboratoriji prošlo više od 4 sata?",
+    ["NE", "DA"],
+    index=0
 )
+
+room_temp = transport_answer == "DA"
+delay_over_4h = time_answer == "DA"
 
 # =====================
 # IZRAČUNAVANJE % BIAS
@@ -57,10 +67,10 @@ a = parameters[param]["a"]
 b = parameters[param]["b"]
 R2 = parameters[param]["R2"]
 
-# Osnovni linearni bias
+# Linearni bias
 percent_bias_linear = a * x + b
 
-# Korekcija zbog preanalitičkih uslova
+# Korekcija zbog preanalitičkih faktora
 extra_bias_factor = 0.0
 if room_temp and delay_over_4h:
     extra_bias_factor = 0.20
@@ -69,7 +79,7 @@ elif room_temp or delay_over_4h:
 
 percent_bias = percent_bias_linear * (1 + extra_bias_factor)
 
-# 95% CI za bias
+# 95% CI
 SE = abs(percent_bias) * math.sqrt(1 - R2)
 ci_low = percent_bias - 1.96 * SE
 ci_high = percent_bias + 1.96 * SE
@@ -87,9 +97,10 @@ corrected_ci_high = measured_value / (1 + ci_low / 100)
 st.markdown("### Rezultati")
 
 st.write(f"**% bias (linearni):** {percent_bias_linear:.2f}")
+
 if extra_bias_factor > 0:
     st.warning(
-        f"Bias uvećan za {int(extra_bias_factor * 100)}% "
+        f"Bias povećan za {int(extra_bias_factor * 100)}% "
         f"zbog preanalitičkih uslova"
     )
 
@@ -105,22 +116,17 @@ st.write(
 # GRAF 1: % bias vs Hb
 # =====================
 x_range = np.linspace(0, 10, 200)
-bias_range_linear = a * x_range + b
-bias_range = bias_range_linear * (1 + extra_bias_factor)
+bias_range = (a * x_range + b) * (1 + extra_bias_factor)
 
 ci_lower_range = bias_range - 1.96 * abs(bias_range) * math.sqrt(1 - R2)
 ci_upper_range = bias_range + 1.96 * abs(bias_range) * math.sqrt(1 - R2)
 
 fig1, ax1 = plt.subplots(figsize=(8, 5))
-ax1.plot(x_range, bias_range, label="% bias", color="blue")
-ax1.fill_between(
-    x_range, ci_lower_range, ci_upper_range,
-    alpha=0.3, label="95% CI"
-)
+ax1.plot(x_range, bias_range, label="% bias")
+ax1.fill_between(x_range, ci_lower_range, ci_upper_range, alpha=0.3, label="95% CI")
 ax1.scatter(x, percent_bias, color="red", s=50, label="Unos")
 ax1.set_xlabel("Hb koncentracija (g/L)")
 ax1.set_ylabel("% bias")
-ax1.set_xlim(0, 10)
 ax1.set_title(f"{param} – % bias vs Hb")
 ax1.legend()
 ax1.grid(True)
