@@ -72,9 +72,9 @@ percent_bias = a * x + b
 
 # Interna korekcija zbog preanalitičkih faktora
 if room_temp and delay_over_8h:
-    percent_bias *= 1.60   # +60%
+    percent_bias *= 1.60   # +100%
 elif room_temp or delay_over_8h:
-    percent_bias *= 1.40   # +40%
+    percent_bias *= 1.40   # +60%
 
 # 95% CI
 SE = abs(percent_bias) * math.sqrt(1 - R2)
