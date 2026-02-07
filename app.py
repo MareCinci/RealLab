@@ -39,7 +39,26 @@ st.title("Krvni parametri – % bias i korekcija vrednosti")
 # =====================
 param = st.selectbox("Izaberi krvni parametar", list(parameters.keys()))
 x = st.number_input("Hb koncentracija (g/L)", value=1.0, step=0.1)
-measured_value = st.number_input(f"Izmerena vrednost {param}", value=0.0, step=0.01)
+measured_value = st.number_input(
+    f"Izmerena vrednost {param}", value=0.0, step=0.01
+)
+
+st.markdown("### Preanalitički uslovi")
+
+transport_answer = st.radio(
+    "Da li je transport i čuvanje uzorka bilo na sobnoj temperaturi?",
+    ["NE", "DA"],
+    index=0
+)
+
+time_answer = st.radio(
+    "Da li je od uzorkovanja do obrade u laboratoriji prošlo više od 8 sati?",
+    ["NE", "DA"],
+    index=0
+)
+
+room_temp = transport_answer == "DA"
+delay_over_8h = time_answer == "DA"
 
 # =====================
 # IZRAČUNAVANJE % BIAS
@@ -48,7 +67,16 @@ a = parameters[param]["a"]
 b = parameters[param]["b"]
 R2 = parameters[param]["R2"]
 
+# Linearni bias
 percent_bias = a * x + b
+
+# Interna korekcija zbog preanalitičkih faktora
+if room_temp and delay_over_8h:
+    percent_bias *= 1.60   # +100%
+elif room_temp or delay_over_8h:
+    percent_bias *= 1.40   # +60%
+
+# 95% CI
 SE = abs(percent_bias) * math.sqrt(1 - R2)
 ci_low = percent_bias - 1.96 * SE
 ci_high = percent_bias + 1.96 * SE
@@ -67,39 +95,58 @@ st.markdown("### Rezultati")
 st.write(f"**% bias:** {percent_bias:.2f}")
 st.write(f"**95% CI % bias:** [{ci_low:.2f}, {ci_high:.2f}]")
 st.write(f"**Korigovana vrednost {param}:** {corrected_value:.2f}")
-st.write(f"**95% CI korigovane vrednosti:** [{corrected_ci_low:.2f}, {corrected_ci_high:.2f}]")
+st.write(
+    f"**95% CI korigovane vrednosti:** "
+    f"[{corrected_ci_low:.2f}, {corrected_ci_high:.2f}]"
+)
 
 # =====================
 # GRAF 1: % bias vs Hb
 # =====================
 x_range = np.linspace(0, 10, 200)
 bias_range = a * x_range + b
+
+if room_temp and delay_over_8h:
+    bias_range *= 1.60
+elif room_temp or delay_over_8h:
+    bias_range *= 1.40
+
 ci_lower_range = bias_range - 1.96 * abs(bias_range) * math.sqrt(1 - R2)
 ci_upper_range = bias_range + 1.96 * abs(bias_range) * math.sqrt(1 - R2)
 
-fig1, ax1 = plt.subplots(figsize=(8,5))
-ax1.plot(x_range, bias_range, label="% bias", color="blue")
+fig1, ax1 = plt.subplots(figsize=(8, 5))
+ax1.plot(x_range, bias_range, label="% bias")
 ax1.fill_between(x_range, ci_lower_range, ci_upper_range, alpha=0.3, label="95% CI")
 ax1.scatter(x, percent_bias, color="red", s=50, label="Unos")
 ax1.set_xlabel("Hb koncentracija (g/L)")
 ax1.set_ylabel("% bias")
-ax1.set_xlim(0, 10)
 ax1.set_title(f"{param} – % bias vs Hb")
 ax1.legend()
 ax1.grid(True)
 st.pyplot(fig1)
 
 # =====================
-# GRAF 2: Korigovana vrednost vs Izmerena vrednost sa 95% CI
+# GRAF 2: Korigovana vs Izmerena vrednost
 # =====================
-measured_range = np.linspace(0.5*measured_value, 1.5*measured_value, 100)
+measured_range = np.linspace(
+    max(0.01, 0.5 * measured_value),
+    1.5 * measured_value + 0.01,
+    100
+)
+
 corrected_range = measured_range / (1 + percent_bias / 100)
 corrected_ci_lower = measured_range / (1 + ci_high / 100)
 corrected_ci_upper = measured_range / (1 + ci_low / 100)
 
-fig2, ax2 = plt.subplots(figsize=(6,6))
-ax2.plot(measured_range, corrected_range, color="green", label="Korigovana vrednost")
-ax2.fill_between(measured_range, corrected_ci_lower, corrected_ci_upper, color="green", alpha=0.3, label="95% CI")
+fig2, ax2 = plt.subplots(figsize=(6, 6))
+ax2.plot(measured_range, corrected_range, label="Korigovana vrednost")
+ax2.fill_between(
+    measured_range,
+    corrected_ci_lower,
+    corrected_ci_upper,
+    alpha=0.3,
+    label="95% CI"
+)
 ax2.scatter(measured_value, corrected_value, color="red", s=50, label="Unos")
 ax2.set_xlabel("Izmerena vrednost")
 ax2.set_ylabel("Korigovana vrednost")
