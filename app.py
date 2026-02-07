@@ -68,16 +68,13 @@ b = parameters[param]["b"]
 R2 = parameters[param]["R2"]
 
 # Linearni bias
-percent_bias_linear = a * x + b
+percent_bias = a * x + b
 
-# Korekcija zbog preanalitičkih faktora
-extra_bias_factor = 0.0
+# Interna korekcija zbog preanalitičkih faktora
 if room_temp and delay_over_4h:
-    extra_bias_factor = 0.20
+    percent_bias *= 1.40   # +40%
 elif room_temp or delay_over_4h:
-    extra_bias_factor = 0.10
-
-percent_bias = percent_bias_linear * (1 + extra_bias_factor)
+    percent_bias *= 1.20   # +20%
 
 # 95% CI
 SE = abs(percent_bias) * math.sqrt(1 - R2)
@@ -95,16 +92,7 @@ corrected_ci_high = measured_value / (1 + ci_low / 100)
 # PRIKAZ REZULTATA
 # =====================
 st.markdown("### Rezultati")
-
-st.write(f"**% bias (linearni):** {percent_bias_linear:.2f}")
-
-if extra_bias_factor > 0:
-    st.warning(
-        f"Bias povećan za {int(extra_bias_factor * 100)}% "
-        f"zbog preanalitičkih uslova"
-    )
-
-st.write(f"**Konačni % bias:** {percent_bias:.2f}")
+st.write(f"**% bias:** {percent_bias:.2f}")
 st.write(f"**95% CI % bias:** [{ci_low:.2f}, {ci_high:.2f}]")
 st.write(f"**Korigovana vrednost {param}:** {corrected_value:.2f}")
 st.write(
@@ -116,7 +104,12 @@ st.write(
 # GRAF 1: % bias vs Hb
 # =====================
 x_range = np.linspace(0, 10, 200)
-bias_range = (a * x_range + b) * (1 + extra_bias_factor)
+bias_range = a * x_range + b
+
+if room_temp and delay_over_4h:
+    bias_range *= 1.40
+elif room_temp or delay_over_4h:
+    bias_range *= 1.20
 
 ci_lower_range = bias_range - 1.96 * abs(bias_range) * math.sqrt(1 - R2)
 ci_upper_range = bias_range + 1.96 * abs(bias_range) * math.sqrt(1 - R2)
