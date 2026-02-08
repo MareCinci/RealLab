@@ -35,34 +35,36 @@ parameters = {
 st.title("RealLab aplikacija za kontrolu biasa izazvanog hemolizom")
 
 # =====================
-# UNOS PODATAKA
+# 1️⃣ Izaberi krvni parametar
 # =====================
-st.markdown("### 1️⃣ Izaberi krvni parametar")
-param = st.selectbox("Krvni parametar:", list(parameters.keys()))
+param = st.selectbox("Izaberi krvni parametar:", list(parameters.keys()))
 
-st.markdown("### 2️⃣ Unesi Hb koncentraciju (g/L)")
-x = st.number_input(
-    "Hb (g/L):",
-    min_value=0.0,
-    max_value=10.0,
-    value=1.0,
-    step=0.1
-)
-
-st.markdown(f"### 3️⃣ Izmerena vrednost {param}")
+# =====================
+# 2️⃣ Izmerena vrednost krvnog parametra
+# =====================
 measured_value = st.number_input(
-    f"Vrednost {param}:",
+    f"Izmerena vrednost {param}:",
     value=0.0,
     step=0.01
 )
 
 # =====================
-# SLIKA – HEMOLIZA
+# 3️⃣ Slika hemolysis indeks
 # =====================
-st.markdown("### 4️⃣ Slika hemolysis indeks")
 st.image(
     "Hemolysis level.png",
     use_container_width=True
+)
+
+# =====================
+# 4️⃣ Hb koncentracija (g/L)
+# =====================
+x = st.number_input(
+    "Hb koncentracija (g/L):",
+    min_value=0.0,
+    max_value=10.0,
+    value=1.0,
+    step=0.1
 )
 
 # =====================
