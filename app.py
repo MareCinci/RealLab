@@ -52,7 +52,7 @@ measured_value = st.number_input(
 # 3️⃣ Slika hemolysis indeks
 # =====================
 st.image(
-    "Hemolysis level.png",
+    "Hemolysis.png",
     use_container_width=True
 )
 
