@@ -32,7 +32,7 @@ parameters = {
 # =====================
 # NASLOV
 # =====================
-st.title("Krvni parametri – % bias i korekcija vrednosti")
+st.title("RealLab aplikacija za kontrolu biasa izazvanog hemolizom")
 
 # =====================
 # SLIKA – HEMOLIZA
