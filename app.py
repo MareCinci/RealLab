@@ -96,9 +96,9 @@ R2 = parameters[param]["R2"]
 percent_bias = a * x + b
 
 if room_temp and delay_over_8h:
-    percent_bias *= 2.00
+    percent_bias *= 1.60
 elif room_temp or delay_over_8h:
-    percent_bias *= 1.50
+    percent_bias *= 1.40
 
 SE = abs(percent_bias) * math.sqrt(1 - R2)
 ci_low = percent_bias - 1.96 * SE
